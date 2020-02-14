@@ -1,0 +1,55 @@
+---
+title: "College Admission Prediction"
+author: "Deo Ivan Mareza"
+date: "`14 Feburary 2020`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# INTRODUCTION
+
+In this exercise, we want to see the chance of someone getting into a university of their choice using linear regression method.
+
+
+<font size = "2">
+The data is kindly provided by : Mohan S Acharya, Asfia Armaan, Aneeta S Antony : A Comparison of Regression Models for Prediction of Graduate Admissions, IEEE International Conference on Computational Intelligence in Data Science 2019
+</font>
+
+
+
+# DATA PREPARATION
+
+
+Library packages that we're using
+```{r,warning=FALSE, results='hide',message=FALSE}
+
+library(tidyverse)
+library(GGally)
+library(MLmetrics)
+library(car)
+library(lmtest)
+
+```
+
+Reading the data
+```{r,warning=FALSE, results='hide',message=FALSE}
+
+admission <- read_csv("data_input/Admission_Predict_Ver1.1.csv")
+
+```
+
+Checking the data
+```{r}
+
+head(admission)
+
+```
+
+
+
