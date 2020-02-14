@@ -1,32 +1,33 @@
 ---
 title: "College Admission Prediction"
 author: "Deo Ivan Mareza"
-date: "`14 Feburary 2020`"
+date: "`14 February 2020`"
 output:
-  prettydoc::html_pretty:
-    theme: cayman
-    highlight: github
-vignette: >
-  %\VignetteIndexEntry{Vignette Title}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+  html_document:
+    df_print: paged
+    highlight: breezedark
+    theme: cosmo
+    toc: yes
+    toc_float:
+      collapsed: no
+  word_document:
+    toc: yes
 ---
-
 # INTRODUCTION
 
-In this exercise, we want to see the chance of someone getting into a university of their choice using linear regression method.
+In this exercise, I want to predict someone's `chance of admission` to a university of their choice using linear regression method based on other variables.
+<br><br>
+I will use MSE and RMSE as a measure of my model's accuracy.
+<br>
 
+ 
 
-<font size = "2">
-The data is kindly provided by : Mohan S Acharya, Asfia Armaan, Aneeta S Antony : A Comparison of Regression Models for Prediction of Graduate Admissions, IEEE International Conference on Computational Intelligence in Data Science 2019
-</font>
-
-
+<br>
 
 # DATA PREPARATION
 
 
-Library packages that we're using
+Library packages that I'm using
 ```{r,warning=FALSE, results='hide',message=FALSE}
 
 library(tidyverse)
@@ -34,6 +35,7 @@ library(GGally)
 library(MLmetrics)
 library(car)
 library(lmtest)
+library(stringr)
 
 ```
 
@@ -45,11 +47,159 @@ admission <- read_csv("data_input/Admission_Predict_Ver1.1.csv")
 ```
 
 Checking the data
+
+```{r, results='asis'}
+knitr::kable(head(admission, 10))
+
+```
+
+<br>
+<font size = "5">
+The Data Explains : <br><br>
+</font>
+1. GRE Scores ( out of 340 ) <br>
+2. TOEFL Scores ( out of 120 ) <br>
+3. University Rating ( out of 5 ) <br>
+4. Statement of Purpose and Letter of Recommendation Strength ( out of 5 ) <br>
+5. Undergraduate GPA ( out of 10 ) <br>
+6. Research Experience ( either 0 or 1 ) <br>
+7. Chance of Admit ( ranging from 0 to 1 )
+
+<br>
+
+I'm changing the column names to something more code-friendly & our research column from numeric to a logical TRUE and FALSE
 ```{r}
 
-head(admission)
+names(admission) <- str_replace_all(str_to_lower(names(admission)), " ", "_")
+admission[,"research"] <- as.logical(as.integer( unlist(admission[,"research"])))
 
 ```
 
 
+## Separating Data to Train and Test
+
+In order to test the model on later stage, I'll separate the dataset into 2, training and testing data with a ratio 8:2. 
+
+```{r}
+
+admission_train <- admission[1:400,]
+admission_test <- admission[401:ncol(admission),]
+
+```
+
+<br>
+
+# DATA ANALYSIS
+
+Checking if any of the variables are linearly related to each other.
+
+```{r, warning=FALSE,}
+
+ggcorr(admission_train, label = T, hjust = .7, layout.exp = 1, label_size = 4, cex = 3)
+
+```
+
+
+
+Seeing that all variablers have a good correlation with each other except the serial number, I think we can move to modelling and exclude the serial number in our model.
+<br>
+
+# MODELLING
+
+I'll make a linear model with the name `model_admission`
+```{r}
+
+model_admission <- lm(formula = chance_of_admit ~ gre_score + toefl_score + 
+    university_rating + lor + cgpa + research, data = admission_train)
+
+summary(model_admission)
+
+
+```
+
+I think I'm pretty happy with the resulting R squared and t value. The university rating has a lower t value but I personally think that it's an important variable, so I'll keep it inside the linear model. 
+
+<br>
+
+
+## Checking Our Assumption
+
+### Normality
+
+
+```{r}
+
+hist(model_admission$residuals)
+shapiro.test(model_admission$residuals)
+
+```
+
+
+### Homoscedacity
+
+
+```{r}
+
+plot(model_admission$fitted.values, model_admission$residuals)
+abline(h = 0, col = "red")
+bptest(model_admission)
+
+```
+
+Based on our bp test, there seemed to be abit of a pattern here, but looking at the graph, I think it's still acceptable.
+
+
+### Multicolinearity
+
+```{r}
+
+vif(model_admission)
+
+```
+
+It seemed that our predictor variable does not correlate strongly with each other.
+
+<br><br>
+
+### Initial MSE and RMSE with training data
+
+```{r}
+
+MSE(y_pred = model_admission$fitted.values, y_true = admission_train$chance_of_admit)
+RMSE(y_pred = model_admission$fitted.values, y_true = admission_train$chance_of_admit)
+
+
+```
+
+<br>
+
+# PREDICTION
+
+Using the model I've built, I will try to test it with the `admission_test` dataset that we've split before.
+```{r}
+
+admission_test$chance_admit_predict <- round(predict(object = model_admission, newdata = admission_test),2)
+
+```
+
+### MSE and RMSE value with test data
+```{r}
+
+MSE(y_pred = admission_test$chance_admit_predict, y_true = admission_test$chance_of_admit)
+RMSE(y_pred = admission_test$chance_admit_predict, y_true = admission_test$chance_of_admit)
+
+```
+<br>
+
+# CONCLUSION
+
+Considering that our range of data is between `0.34` and `0.97`, I think my model have achieved a pretty good prediction result with average error value of `0.063`.
+
+<br>
+
+# CREDITS
+
+
+
+The data is kindly provided by : Mohan S Acharya, Asfia Armaan, Aneeta S Antony : A Comparison of Regression Models for Prediction of Graduate Admissions, IEEE International Conference on Computational Intelligence in Data Science 2019
 
